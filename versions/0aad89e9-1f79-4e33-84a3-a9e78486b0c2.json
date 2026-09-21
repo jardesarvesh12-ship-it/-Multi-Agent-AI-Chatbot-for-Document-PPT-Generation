@@ -1,0 +1,19 @@
+{
+  "artifact_id": "0aad89e9-1f79-4e33-84a3-a9e78486b0c2",
+  "versions": [
+    {
+      "artifact_id": "0aad89e9-1f79-4e33-84a3-a9e78486b0c2",
+      "version_number": 1,
+      "file_path": "versions\\0aad89e9-1f79-4e33-84a3-a9e78486b0c2_v1.docx",
+      "file_type": "docx",
+      "title": "Latest Generative AI Trends \u2013 Proposal and 12\u2011Slide Presentation",
+      "description": "Generated document: Latest Generative AI Trends \u2013 Proposal and 12\u2011Slide Presentation",
+      "parent_version": null,
+      "metadata": {
+        "section_count": 6,
+        "has_citations": true
+      },
+      "created_at": "2026-09-21T08:16:34.306156Z"
+    }
+  ]
+}
