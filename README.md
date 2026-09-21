@@ -107,8 +107,27 @@ cd "d:\PROJECTS\End To End PROJECTS\6.-"
 python -m venv venv
 venv\Scripts\activate   # Windows
 
+
 # Install Python dependencies
 pip install -r requirements.txt
+
+
+#  To run backend 
+.\start_backend.bat
+
+
+# Open a new terminal in the root of your project: 
+# 1. Navigate to the frontend folder
+cd frontend
+
+# 2. Install Node.js dependencies
+npm install
+
+# 3. Go back to the root and start the frontend
+cd ..
+
+.\start_frontend.bat
+
 ```
 
 ### Step 2: Get API Keys (Free)
