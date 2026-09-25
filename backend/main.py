@@ -338,10 +338,12 @@ async def insert_image_into_document(
     caption: Optional[str] = Form(None),
     width_inches: float = Form(5.0),
     align: str = Form("center"),
+    is_logo: bool = Form(False),
+    placement_target: str = Form("section"),
     session_id: Optional[str] = Form(None),
 ):
     """
-    Insert an image into a DOCX document artifact.
+    Insert an image or logo into a DOCX document artifact.
     Accepts an uploaded image file OR the filename of an already uploaded image.
     """
     vm = get_version_manager()
@@ -393,6 +395,8 @@ async def insert_image_into_document(
         caption=caption,
         width_inches=width_inches,
         align=align,
+        is_logo=is_logo,
+        placement_target=placement_target,
     )
 
     if res.get("status") == "error":

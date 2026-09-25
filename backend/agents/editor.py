@@ -219,15 +219,21 @@ def insert_image_to_docx(
     caption: Optional[str] = None,
     width_inches: float = 5.0,
     align: str = "center",
+    is_logo: bool = False,
+    placement_target: str = "section",  # "section", "header_logo", "top_cover"
     output_dir: Optional[str] = None,
 ) -> dict[str, Any]:
     """
-    Insert an image into a DOCX document at a specified section (or target first section).
+    Insert an image or company logo/symbol into a DOCX document.
     """
-    logger.info(f"[Editor] Inserting image '{image_path}' into DOCX '{file_path}'")
+    logger.info(f"[Editor] Inserting image/logo '{image_path}' into DOCX '{file_path}' (target: {placement_target})")
     try:
         doc = parse_docx(file_path)
         style = extract_style_from_docx(doc)
+
+        # If header_logo or top_cover, attach to style profile as brand logo
+        if placement_target in ("header_logo", "top_cover") or (is_logo and not section_heading):
+            style.brand_logo_path = image_path
 
         sections: list[DocumentSection] = []
         target_found = False
@@ -244,10 +250,11 @@ def insert_image_to_docx(
             content = sec_dict["content"]
             img_list = []
 
-            # Check matching section
-            if (section_heading and section_heading.strip().lower() in heading.lower()) or (not section_heading and not target_found):
-                target_found = True
-                img_list.append(img_obj)
+            # Check matching section if placement is section or specific heading provided
+            if placement_target == "section" or (section_heading and section_heading.strip()):
+                if (section_heading and section_heading.strip().lower() in heading.lower()) or (not section_heading and not target_found and placement_target == "section"):
+                    target_found = True
+                    img_list.append(img_obj)
 
             sections.append(DocumentSection(
                 heading=heading,
@@ -256,8 +263,7 @@ def insert_image_to_docx(
                 images=img_list,
             ))
 
-        if not sections or not target_found:
-            # If no matching section found or empty doc, attach to first section or create new
+        if placement_target == "section" and (not sections or not target_found):
             if sections:
                 sections[0].images.append(img_obj)
             else:
@@ -284,8 +290,8 @@ def insert_image_to_docx(
             source_file_path=new_file_path,
             title=Path(file_path).stem,
             file_type="docx",
-            description=f"Inserted image: {Path(image_path).name}" + (f" ({caption})" if caption else ""),
-            metadata={"inserted_image": image_path, "caption": caption, "section": section_heading},
+            description=f"Inserted {'logo' if is_logo else 'image'}: {Path(image_path).name}" + (f" ({caption})" if caption else ""),
+            metadata={"inserted_image": image_path, "caption": caption, "section": section_heading, "is_logo": is_logo, "target": placement_target},
         )
 
         return {
@@ -294,7 +300,7 @@ def insert_image_to_docx(
             "artifact_id": artifact_id,
             "version": version_record.version_number,
             "filename": Path(new_file_path).name,
-            "changes_made": [f"Inserted image '{Path(image_path).name}' into document"],
+            "changes_made": [f"Inserted {'logo' if is_logo else 'image'} '{Path(image_path).name}' into document"],
         }
     except Exception as e:
         logger.error(f"[Editor] Image insert error: {e}")

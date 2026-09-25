@@ -984,3 +984,65 @@ html, body, #root {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* Category Toggle & Placement Cards */
+.category-toggle {
+  display: flex;
+  gap: 8px;
+  background: var(--bg-deep);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.category-btn {
+  flex: 1;
+  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.category-btn.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent-light);
+}
+
+.placement-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.placement-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.placement-card:hover {
+  border-color: var(--border-hover);
+}
+
+.placement-card.selected {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.placement-card input[type="radio"] {
+  accent-color: var(--accent);
+  margin-top: 2px;
+}
+
+
