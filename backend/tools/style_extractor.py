@@ -28,11 +28,22 @@ class StyleProfile:
     accent_color: Optional[str] = None
     background_color: Optional[str] = None
 
-    # Layout
+    # Layout & Margins
     margins: dict = field(default_factory=lambda: {
-        "top": 1.0, "bottom": 1.0, "left": 1.25, "right": 1.25
+        "top": 1.0, "bottom": 1.0, "left": 1.0, "right": 1.0
     })
     line_spacing: float = 1.15
+    space_after_para: float = 6.0       # pt after paragraphs
+    space_before_heading: float = 12.0  # pt before headings
+    page_orientation: str = "portrait"  # portrait / landscape
+    paper_size: str = "letter"          # letter / a4
+
+    # Branding & Header/Footer
+    brand_name: Optional[str] = None
+    brand_logo_path: Optional[str] = None
+    header_text: Optional[str] = None
+    footer_text: Optional[str] = None
+    show_page_numbers: bool = True
 
     # Content style signals
     tone: str = "professional"          # professional / casual / academic / technical
