@@ -19,7 +19,7 @@ from backend.config import settings
 
 def research_topic(
     query: str,
-    max_results: int = 5,
+    max_results: int = 7,
     search_depth: str = "advanced",
     include_domains: Optional[list[str]] = None,
     exclude_domains: Optional[list[str]] = None,
@@ -56,7 +56,7 @@ def research_topic(
             "max_results": min(max_results, 10),
             "search_depth": search_depth,
             "include_answer": True,
-            "include_raw_content": False,
+            "include_raw_content": True,  # Get full page content for richer context
         }
         if include_domains:
             kwargs["include_domains"] = include_domains
@@ -74,13 +74,16 @@ def research_topic(
         for r in response.get("results", []):
             url = r.get("url", "")
             title = r.get("title", "")
-            content = r.get("content", "")
+            # Prefer raw_content (full page) over snippet, fall back to content
+            raw = r.get("raw_content") or ""
+            snippet = r.get("content", "")
+            content = raw[:2500] if raw else snippet[:1500]
             score = r.get("score", 0.0)
 
             results.append({
                 "title": title,
                 "url": url,
-                "content": content[:600],
+                "content": content,
                 "score": score,
             })
             citations.append(f"{title} — {url}")
@@ -110,7 +113,7 @@ def research_topic(
         }
 
 
-def multi_topic_research(topics: list[str], results_per_topic: int = 3) -> dict[str, Any]:
+def multi_topic_research(topics: list[str], results_per_topic: int = 5) -> dict[str, Any]:
     """
     Research multiple topics and aggregate findings.
 

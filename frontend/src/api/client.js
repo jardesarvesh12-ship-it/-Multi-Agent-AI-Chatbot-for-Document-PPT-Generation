@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const API = axios.create({
   baseURL: '/api',
-  timeout: 120000, // 2 min timeout for generation
+  timeout: 900000, // 15 min timeout for generation
 })
 
 export const uploadFiles = async (files) => {

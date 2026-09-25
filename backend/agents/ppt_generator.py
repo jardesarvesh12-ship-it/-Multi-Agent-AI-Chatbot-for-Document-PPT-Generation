@@ -34,42 +34,46 @@ def _generate_slide_outline(
     client: "Groq",
     slide_count: int = 10,
 ) -> list[dict]:
-    """Use LLM to generate slide-by-slide outline."""
-    prompt = f"""You are a professional presentation designer. Create a {slide_count}-slide outline for: "{topic}"
+    """Use LLM to generate slide-by-slide outline with rich, data-driven content."""
+    prompt = f"""You are a professional presentation designer and researcher. Create a detailed {slide_count}-slide presentation for: "{topic}"
 
-Context from research:
-{context[:2500]}
+Research context (use extensively — include specific data, statistics, and facts):
+{context[:4500]}
 
-Return ONLY a JSON array:
+Return ONLY a valid JSON array matching this exact format (no markdown code blocks, no trailing commas, escape internal quotes):
 [
   {{
     "title": "Slide Title",
-    "bullet_points": ["Point 1", "Point 2", "Point 3", "Point 4"],
-    "speaker_notes": "Brief speaker notes for presenter"
-  }},
-  ...
+    "bullet_points": [
+      "Specific fact or insight with data: include numbers, percentages, or concrete examples",
+      "Another data-driven point with real-world context",
+      "Third substantive point citing specific trends or findings",
+      "Fourth point with actionable insight or implication"
+    ],
+    "speaker_notes": "2-3 sentence expanded explanation of the slide's key message for the presenter"
+  }}
 ]
 
 Rules:
-- Each slide should have 3-5 bullet points
-- Keep bullet points concise (max 10 words each)
-- Speaker notes should be 1-2 sentences
-- Make slides flow logically: intro → key concepts → analysis → conclusion
+- Return ONLY valid JSON array with no extra text or markdown formatting.
+- Each bullet point MUST be a complete, informative sentence (10-20 words)
+- Include real statistics, percentages, and data points from the research context
+- Reference specific companies, products, technologies, or market figures where available
+- Speaker notes should add depth not visible on the slide
+- Make slides flow logically: intro → market overview → key trends → deep analysis → use cases → challenges → future outlook → recommendations → conclusion
 - Generate exactly {slide_count} slides"""
 
-    response = client.chat.completions.create(
-        model=settings.groq_model,
+    from backend.tools.llm_utils import safe_groq_completion
+    raw = safe_groq_completion(
+        client=client,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
         max_tokens=3000,
     )
-    raw = response.choices[0].message.content.strip()
 
-    start = raw.find("[")
-    end = raw.rfind("]") + 1
-    if start != -1 and end > start:
-        return json.loads(raw[start:end])
-    return []
+    from backend.tools.json_utils import parse_llm_json
+    outline = parse_llm_json(raw, default=[])
+    return outline if isinstance(outline, list) else []
 
 
 def generate_presentation(

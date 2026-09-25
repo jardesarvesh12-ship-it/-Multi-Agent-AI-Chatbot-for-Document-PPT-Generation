@@ -145,16 +145,17 @@ Rules:
 - Always include validator after generation"""
 
         try:
-            response = client.chat.completions.create(
-                model=settings.groq_model,
+            from backend.tools.llm_utils import safe_groq_completion
+            raw = safe_groq_completion(
+                client=client,
                 messages=[{"role": "user", "content": plan_prompt}],
                 temperature=0.1,
                 max_tokens=600,
             )
-            raw = response.choices[0].message.content.strip()
-            start = raw.find("{")
-            end = raw.rfind("}") + 1
-            plan = json.loads(raw[start:end]) if start != -1 else {}
+            from backend.tools.json_utils import parse_llm_json
+            plan = parse_llm_json(raw, default={})
+            if not isinstance(plan, dict):
+                plan = {}
         except Exception as e:
             logger.warning(f"[Supervisor] LLM planning failed, using heuristic: {e}")
             plan = {}
@@ -269,13 +270,13 @@ def web_researcher_node(state: AgentState) -> AgentState:
     topic = state.get("topic", state.get("user_instruction", ""))
     trace = _trace(state, "WebResearcher", f"Searching: {topic[:50]}", "running")
 
-    # Generate 2-3 sub-queries for richer research
+    # Generate up to 3 sub-queries for richer, more specific research
     queries = [topic]
     if len(topic.split()) > 3:
-        queries.append(f"latest trends in {topic}")
-        queries.append(f"{topic} use cases and applications 2024")
+        queries.append(f"latest {topic} trends statistics 2024 2025")
+        queries.append(f"{topic} market analysis use cases examples")
 
-    research = multi_topic_research(queries[:3], results_per_topic=3)
+    research = multi_topic_research(queries[:3], results_per_topic=5)
 
     citations = research.get("citations", [])
     trace = _trace({**state, "agent_trace": trace}, "WebResearcher",
@@ -322,8 +323,9 @@ def doc_generator_node(state: AgentState) -> AgentState:
     research_context = ""
     if state.get("research_results"):
         research_context = state["research_results"].get("combined_summary", "")
-        for r in state["research_results"].get("results", [])[:3]:
-            research_context += f"\n\n{r.get('title', '')}: {r.get('content', '')}"
+        # Include ALL web results for maximum content richness
+        for r in state["research_results"].get("results", []):
+            research_context += f"\n\n=== SOURCE: {r.get('title', '')} ===\n{r.get('content', '')}"
 
     rag_context = state.get("rag_results", {}).get("context", "") if state.get("rag_results") else ""
 
@@ -336,13 +338,17 @@ def doc_generator_node(state: AgentState) -> AgentState:
         artifact_id=state.get("doc_artifact_id"),
     )
 
+    status = "done" if result.get("status") == "success" else "error"
     trace = _trace({**state, "agent_trace": trace}, "DocGenerator",
-                   f"Document generated: v{result.get('version', '?')}", "done" if result["status"] == "success" else "error")
+                   f"Document generated: v{result.get('version', '?')}", status)
+    error_msg = result.get("message", "Document generation failed") if status == "error" else None
+
     return {
         **state,
         "generated_doc_path": result.get("file_path"),
         "doc_artifact_id": result.get("artifact_id"),
         "agent_trace": trace,
+        "error": error_msg or state.get("error")
     }
 
 
@@ -358,8 +364,9 @@ def ppt_generator_node(state: AgentState) -> AgentState:
     research_context = ""
     if state.get("research_results"):
         research_context = state["research_results"].get("combined_summary", "")
-        for r in state["research_results"].get("results", [])[:3]:
-            research_context += f"\n\n{r.get('title', '')}: {r.get('content', '')}"
+        # Include ALL web results for maximum content richness
+        for r in state["research_results"].get("results", []):
+            research_context += f"\n\n=== SOURCE: {r.get('title', '')} ===\n{r.get('content', '')}"
 
     rag_context = state.get("rag_results", {}).get("context", "") if state.get("rag_results") else ""
 
@@ -382,13 +389,17 @@ def ppt_generator_node(state: AgentState) -> AgentState:
         slide_count=slide_count,
     )
 
+    status = "done" if result.get("status") == "success" else "error"
     trace = _trace({**state, "agent_trace": trace}, "PPTGenerator",
-                   f"Presentation generated: {result.get('version', '?')} versions", "done" if result["status"] == "success" else "error")
+                   f"Presentation generated: {result.get('version', '?')} versions", status)
+    error_msg = result.get("message", "Presentation generation failed") if status == "error" else None
+
     return {
         **state,
         "generated_ppt_path": result.get("file_path"),
         "ppt_artifact_id": result.get("artifact_id"),
         "agent_trace": trace,
+        "error": error_msg or state.get("error")
     }
 
 
@@ -420,7 +431,9 @@ def editor_node(state: AgentState) -> AgentState:
 
     extra_context = ""
     if state.get("research_results"):
-        extra_context = state["research_results"].get("combined_summary", "")[:500]
+        extra_context = state["research_results"].get("combined_summary", "")[:1500]
+        for r in state["research_results"].get("results", [])[:5]:
+            extra_context += f"\n\n{r.get('title', '')}: {r.get('content', '')}"
 
     edited_doc = None
     edited_ppt = None
@@ -512,7 +525,7 @@ def response_composer_node(state: AgentState) -> AgentState:
 
 def route_to_agents(state: AgentState) -> str:
     """Route to the next unexecuted agent or end based on trace."""
-    executed = {t.get("agent") for t in state.get("agent_trace", []) if t.get("status") == "done"}
+    executed = {t.get("agent") for t in state.get("agent_trace", []) if t.get("status") in ("done", "error")}
     node_to_trace = {
         "doc_analyzer": "DocumentAnalyzer",
         "ppt_analyzer": "PPTAnalyzer",
@@ -658,7 +671,25 @@ def run_orchestrator(
     }
 
     logger.info(f"[Orchestrator] Starting session={session_id} | msg='{user_message[:60]}'")
-    result = graph.invoke(initial_state)
-    logger.info(f"[Orchestrator] Completed. trace_steps={len(result.get('agent_trace', []))}")
 
+    # Run the graph with a recursion limit to prevent infinite loops
+    import concurrent.futures
+    TIMEOUT_SECONDS = 480  # 8 minutes — increased for richer research + content generation
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(
+            graph.invoke,
+            initial_state,
+            {"recursion_limit": 25},
+        )
+        try:
+            result = future.result(timeout=TIMEOUT_SECONDS)
+        except concurrent.futures.TimeoutError:
+            logger.error(f"[Orchestrator] Timed out after {TIMEOUT_SECONDS}s")
+            raise RuntimeError(
+                f"The request timed out after {TIMEOUT_SECONDS // 60} minutes. "
+                "Try a simpler query or disable web research."
+            )
+
+    logger.info(f"[Orchestrator] Completed. trace_steps={len(result.get('agent_trace', []))}")
     return result

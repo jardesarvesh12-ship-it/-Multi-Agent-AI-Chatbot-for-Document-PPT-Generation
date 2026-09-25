@@ -11,7 +11,7 @@ import os
 class Settings(BaseSettings):
     # ── LLM ──────────────────────────────────────────────────
     groq_api_key: str = Field(..., env="GROQ_API_KEY")
-    groq_model: str = Field("openai/gpt-oss-120b", env="GROQ_MODEL")
+    groq_model: str = Field("openai/gpt-oss-20b", env="GROQ_MODEL")
 
     # ── Web Search ───────────────────────────────────────────
     tavily_api_key: str = Field(..., env="TAVILY_API_KEY")
@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     frontend_url: str = Field("http://localhost:5173", env="FRONTEND_URL")
 
     class Config:
-        env_file = ".env"
+        env_file = ".env" if os.path.exists(".env") else "../.env"
         env_file_encoding = "utf-8"
         extra = "ignore"
 

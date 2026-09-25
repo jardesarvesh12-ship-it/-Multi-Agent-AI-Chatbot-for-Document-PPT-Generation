@@ -68,23 +68,45 @@ def _add_heading(doc: "Document", text: str, level: int, style: StyleProfile):
 
 
 def _add_paragraph(doc: "Document", text: str, style: StyleProfile):
-    """Add a styled body paragraph."""
-    para = doc.add_paragraph(text)
-    run = para.runs[0] if para.runs else para.add_run(text)
-    run.font.name = style.body_font
-    run.font.size = Pt(style.body_font_size)
-    if style.body_color:
-        _set_font_color(run, style.body_color)
+    """Add a styled body paragraph with inline markdown bold/italic support."""
+    import re
+    para = doc.add_paragraph()
+    # Split text on **bold** and *italic* markers
+    parts = re.split(r'(\*\*.*?\*\*|\*.*?\*)', text)
+    for part in parts:
+        if part.startswith('**') and part.endswith('**'):
+            run = para.add_run(part[2:-2])
+            run.bold = True
+        elif part.startswith('*') and part.endswith('*'):
+            run = para.add_run(part[1:-1])
+            run.italic = True
+        else:
+            run = para.add_run(part)
+        run.font.name = style.body_font
+        run.font.size = Pt(style.body_font_size)
+        if style.body_color:
+            _set_font_color(run, style.body_color)
     return para
 
 
 def _add_bullet_list(doc: "Document", items: list[str], style: StyleProfile):
-    """Add a bullet list."""
+    """Add a bullet list with inline markdown bold/italic support."""
+    import re
     for item in items:
-        para = doc.add_paragraph(item.strip("•- "), style="List Bullet")
-        if para.runs:
-            para.runs[0].font.name = style.body_font
-            para.runs[0].font.size = Pt(style.body_font_size)
+        raw = item.strip("•- ")
+        para = doc.add_paragraph(style="List Bullet")
+        parts = re.split(r'(\*\*.*?\*\*|\*.*?\*)', raw)
+        for part in parts:
+            if part.startswith('**') and part.endswith('**'):
+                run = para.add_run(part[2:-2])
+                run.bold = True
+            elif part.startswith('*') and part.endswith('*'):
+                run = para.add_run(part[1:-1])
+                run.italic = True
+            else:
+                run = para.add_run(part)
+            run.font.name = style.body_font
+            run.font.size = Pt(style.body_font_size)
 
 
 def _add_numbered_list(doc: "Document", items: list[str], style: StyleProfile):

@@ -41,32 +41,27 @@ def _generate_document_outline(
 
 Style requirements: {style_desc}
 
-Available research context:
-{context[:3000]}
+Available research context (use this to make the outline specific and data-driven):
+{context[:4500]}
 
-Generate exactly {section_count} sections. Return ONLY a JSON array in this format:
+Generate exactly {section_count} sections. Return ONLY a valid JSON array in this format (no markdown code blocks, no trailing commas):
 [
-  {{"heading": "Executive Summary", "content_brief": "2-3 sentence description of what this section covers"}},
-  ...
+  {{"heading": "Executive Summary", "content_brief": "3-5 sentence description of what this section covers with specific data points from the research context"}}
 ]
 
-Make the outline comprehensive, professional, and well-structured."""
+Make the outline comprehensive, professional, and well-structured. Each content_brief should be detailed enough to write 400-600 words."""
 
-    response = client.chat.completions.create(
-        model=settings.groq_model,
+    from backend.tools.llm_utils import safe_groq_completion
+    raw = safe_groq_completion(
+        client=client,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
-        max_tokens=1500,
+        max_tokens=2000,
     )
-    raw = response.choices[0].message.content.strip()
 
-    # Extract JSON
-    start = raw.find("[")
-    end = raw.rfind("]") + 1
-    if start != -1 and end > start:
-        outline = json.loads(raw[start:end])
-        return outline
-    return []
+    from backend.tools.json_utils import parse_llm_json
+    outline = parse_llm_json(raw, default=[])
+    return outline if isinstance(outline, list) else []
 
 
 def _generate_section_content(
@@ -88,18 +83,23 @@ Section brief: {brief}
 Style: {style_desc}
 Formatting: {bullet_instr}
 
-Use this research context where relevant:
-{context[:2000]}
+Use this research context extensively — include specific facts, statistics, quotes, and examples:
+{context[:4000]}
 
-Write 150-300 words. Be specific, professional and informative. Format using bullet points starting with '• ' where appropriate."""
+Write 400-600 words. Be highly specific, professional, and informative. Include:
+- Specific data points, numbers, and statistics from the research
+- Real-world examples and use cases
+- Expert insights and current trends
+- Actionable insights relevant to {topic}
+Format using bullet points starting with '• ' where appropriate for lists. Use flowing prose for analysis paragraphs."""
 
-    response = client.chat.completions.create(
-        model=settings.groq_model,
+    from backend.tools.llm_utils import safe_groq_completion
+    return safe_groq_completion(
+        client=client,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.4,
-        max_tokens=600,
+        max_tokens=1500,
     )
-    return response.choices[0].message.content.strip()
 
 
 def generate_document(
@@ -109,7 +109,7 @@ def generate_document(
     style_profile: Optional[StyleProfile] = None,
     citations: Optional[list[str]] = None,
     artifact_id: Optional[str] = None,
-    section_count: int = 6,
+    section_count: int = 8,
     output_dir: Optional[str] = None,
 ) -> dict[str, Any]:
     """

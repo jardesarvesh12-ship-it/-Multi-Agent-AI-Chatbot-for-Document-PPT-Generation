@@ -94,35 +94,50 @@ def _add_content_slide(
 
     slide = prs.slides.add_slide(layout)
 
-    # Fill title
-    for placeholder in slide.placeholders:
-        ph_type = placeholder.placeholder_format.type
-        if ph_type in (1, 13, 3):  # Title variants
-            placeholder.text = slide_content.title
-            if placeholder.text_frame.paragraphs[0].runs:
-                run = placeholder.text_frame.paragraphs[0].runs[0]
-                _apply_text_style(run, style.title_font, min(style.title_font_size, 28),
-                                   bold=True, color_hex=style.heading_color)
-        elif ph_type == 2:  # Body
-            tf = placeholder.text_frame
-            tf.clear()
-            if slide_content.bullet_points:
-                for i, point in enumerate(slide_content.bullet_points):
-                    if i == 0:
-                        para = tf.paragraphs[0]
-                    else:
-                        para = tf.add_paragraph()
-                    para.text = point.strip("•- ")
-                    para.level = 0
-                    if para.runs:
-                        _apply_text_style(para.runs[0], style.body_font, style.body_font_size,
-                                           color_hex=style.body_color)
-            elif slide_content.content:
-                para = tf.paragraphs[0]
-                para.text = slide_content.content[:400]
-                if para.runs:
-                    _apply_text_style(para.runs[0], style.body_font, style.body_font_size,
-                                       color_hex=style.body_color)
+    # Build idx → placeholder map (idx 0=title, idx 1=body/content)
+    ph_map = {ph.placeholder_format.idx: ph for ph in slide.placeholders}
+
+    # --- Title (idx 0) ---
+    title_ph = ph_map.get(0)
+    if title_ph:
+        title_ph.text = slide_content.title
+        if title_ph.text_frame.paragraphs[0].runs:
+            _apply_text_style(
+                title_ph.text_frame.paragraphs[0].runs[0],
+                style.title_font, min(style.title_font_size, 28),
+                bold=True, color_hex=style.heading_color,
+            )
+
+    # --- Body (idx 1) ---
+    body_ph = ph_map.get(1)
+    if body_ph:
+        tf = body_ph.text_frame
+        tf.clear()
+        tf.word_wrap = True
+
+        def _clean(text: str) -> str:
+            """Strip markdown bold/italic markers."""
+            import re
+            text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
+            text = re.sub(r'\*(.*?)\*', r'\1', text)
+            return text.strip("•- \t")
+
+        points = slide_content.bullet_points
+        if not points and slide_content.content:
+            points = [slide_content.content[:600]]
+
+        for i, point in enumerate(points):
+            clean_point = _clean(point)
+            if not clean_point:
+                continue
+            para = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+            para.text = clean_point
+            para.level = 0
+            if para.runs:
+                _apply_text_style(
+                    para.runs[0], style.body_font, style.body_font_size,
+                    color_hex=style.body_color,
+                )
 
     # Add speaker notes
     if slide_content.speaker_notes:

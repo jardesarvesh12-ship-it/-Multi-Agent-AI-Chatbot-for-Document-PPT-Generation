@@ -194,7 +194,7 @@ async def upload_files(files: list[UploadFile] = File(...)):
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+def chat(request: ChatRequest):
     """
     Main chat endpoint. Routes user message through multi-agent orchestrator.
 

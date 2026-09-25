@@ -45,19 +45,16 @@ Return ONLY JSON:
   "new_section_heading": "if adding a section, its heading (else null)"
 }}"""
 
-    response = client.chat.completions.create(
-        model=settings.groq_model,
+    from backend.tools.llm_utils import safe_groq_completion
+    raw = safe_groq_completion(
+        client=client,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.1,
         max_tokens=300,
     )
-    raw = response.choices[0].message.content.strip()
-    import json
-    start = raw.find("{")
-    end = raw.rfind("}") + 1
-    if start != -1 and end > start:
-        return json.loads(raw[start:end])
-    return {"action": "other", "target": "all", "details": instruction}
+    from backend.tools.json_utils import parse_llm_json
+    intent = parse_llm_json(raw, default={"action": "other", "target": "all", "details": instruction})
+    return intent if isinstance(intent, dict) else {"action": "other", "target": "all", "details": instruction}
 
 
 def _generate_new_section(heading: str, instruction: str, doc_context: str, style: StyleProfile,
@@ -71,13 +68,13 @@ Existing document context:
 
 Write 150-250 words. Use bullet points where appropriate (start with '• ')."""
 
-    response = client.chat.completions.create(
-        model=settings.groq_model,
+    from backend.tools.llm_utils import safe_groq_completion
+    return safe_groq_completion(
+        client=client,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.4,
         max_tokens=500,
     )
-    return response.choices[0].message.content.strip()
 
 
 def _make_content_concise(content: str, client: "Groq") -> str:
@@ -88,13 +85,13 @@ def _make_content_concise(content: str, client: "Groq") -> str:
 
 Return only the revised content."""
 
-    response = client.chat.completions.create(
-        model=settings.groq_model,
+    from backend.tools.llm_utils import safe_groq_completion
+    return safe_groq_completion(
+        client=client,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
         max_tokens=600,
     )
-    return response.choices[0].message.content.strip()
 
 
 def edit_docx(
