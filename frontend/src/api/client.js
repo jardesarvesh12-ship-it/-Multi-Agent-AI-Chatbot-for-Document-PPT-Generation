@@ -53,6 +53,18 @@ export const clearSession = async (sessionId) => {
   return res.data
 }
 
+export const getDocumentSections = async (artifactId) => {
+  const res = await API.get(`/document/${artifactId}/sections`)
+  return res.data
+}
+
+export const insertImageToDoc = async (formData) => {
+  const res = await API.post('/document/insert-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return res.data
+}
+
 export const downloadFile = (filename) => {
   window.open(`/api/download/${filename}`, '_blank')
 }

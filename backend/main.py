@@ -39,6 +39,8 @@ from backend.config import settings
 from backend.agents.orchestrator import run_orchestrator
 from backend.versioning.version_manager import get_version_manager
 from backend.agents.rag_agent import get_knowledge_stats, list_indexed_sources
+from backend.agents.editor import insert_image_to_docx
+from backend.tools.docx_parser import parse_docx
 
 
 # ─────────────────────────────────────────────
@@ -304,6 +306,110 @@ async def delete_artifact(artifact_id: str):
     vm = get_version_manager()
     vm.delete_artifact(artifact_id)
     return {"status": "deleted", "artifact_id": artifact_id}
+
+
+@app.get("/api/document/{artifact_id}/sections")
+async def get_document_sections(artifact_id: str):
+    """Get list of headings/sections in the latest version of a document artifact."""
+    vm = get_version_manager()
+    versions = vm.get_versions(artifact_id)
+    if not versions:
+        raise HTTPException(status_code=404, detail=f"No versions found for artifact: {artifact_id}")
+
+    latest_file = versions[-1].get("file_path") or versions[-1].get("path")
+    if not latest_file or not Path(latest_file).exists():
+        raise HTTPException(status_code=404, detail="Document file missing")
+
+    try:
+        doc = parse_docx(latest_file)
+        sections = [sec["heading"] for sec in doc.sections if sec.get("heading")]
+        return {"artifact_id": artifact_id, "sections": sections}
+    except Exception as e:
+        logger.error(f"Error parsing document sections: {e}")
+        return {"artifact_id": artifact_id, "sections": []}
+
+
+@app.post("/api/document/insert-image")
+async def insert_image_into_document(
+    artifact_id: str = Form(...),
+    image_file: Optional[UploadFile] = File(None),
+    existing_image_filename: Optional[str] = Form(None),
+    section_heading: Optional[str] = Form(None),
+    caption: Optional[str] = Form(None),
+    width_inches: float = Form(5.0),
+    align: str = Form("center"),
+    session_id: Optional[str] = Form(None),
+):
+    """
+    Insert an image into a DOCX document artifact.
+    Accepts an uploaded image file OR the filename of an already uploaded image.
+    """
+    vm = get_version_manager()
+    versions = vm.get_versions(artifact_id)
+    if not versions:
+        raise HTTPException(status_code=404, detail=f"Artifact not found: {artifact_id}")
+
+    latest = versions[-1]
+    doc_path = latest.get("file_path") or latest.get("path")
+    if not doc_path or not Path(doc_path).exists():
+        raise HTTPException(status_code=404, detail="Document file not found on disk")
+
+    # Resolve image path
+    image_path: Optional[str] = None
+    if image_file and image_file.filename:
+        ext = Path(image_file.filename).suffix.lower()
+        if ext.lstrip(".") not in ("png", "jpg", "jpeg", "webp", "tiff", "bmp", "gif"):
+            raise HTTPException(status_code=400, detail=f"Unsupported image type: {ext}")
+
+        content = await image_file.read()
+        if not _file_size_ok(len(content)):
+            raise HTTPException(status_code=413, detail="Image file too large")
+
+        file_id = str(uuid.uuid4())
+        safe_name = f"{file_id}{ext}"
+        dest_path = Path(settings.upload_dir) / safe_name
+
+        async with aiofiles.open(str(dest_path), "wb") as f:
+            await f.write(content)
+
+        image_path = str(dest_path)
+    elif existing_image_filename:
+        candidate = Path(settings.upload_dir) / existing_image_filename
+        if candidate.exists():
+            image_path = str(candidate)
+        else:
+            matches = list(Path(settings.upload_dir).glob(f"*{existing_image_filename}*"))
+            if matches:
+                image_path = str(matches[0])
+
+    if not image_path:
+        raise HTTPException(status_code=400, detail="Please upload or select an image file.")
+
+    res = insert_image_to_docx(
+        file_path=doc_path,
+        artifact_id=artifact_id,
+        image_path=image_path,
+        section_heading=section_heading,
+        caption=caption,
+        width_inches=width_inches,
+        align=align,
+    )
+
+    if res.get("status") == "error":
+        raise HTTPException(status_code=500, detail=res.get("message", "Failed to insert image"))
+
+    if session_id and session_id in session_store:
+        session_store[session_id]["generated_doc_path"] = res["file_path"]
+
+    artifact_info = _artifact_info(res["file_path"])
+    return {
+        "status": "success",
+        "doc_artifact_id": artifact_id,
+        "version": res["version"],
+        "generated_doc": artifact_info,
+        "message": f"Successfully inserted image into document (Version {res['version']})",
+    }
+
 
 
 @app.get("/api/knowledge")

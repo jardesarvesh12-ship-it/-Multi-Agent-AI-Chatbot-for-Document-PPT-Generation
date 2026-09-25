@@ -14,7 +14,7 @@ from backend.config import settings
 from backend.tools.docx_parser import parse_docx
 from backend.tools.pptx_parser import parse_pptx
 from backend.tools.style_extractor import StyleProfile, extract_style_from_docx, extract_style_from_pptx
-from backend.generators.docx_builder import DocumentSection, build_docx
+from backend.generators.docx_builder import DocumentSection, build_docx, ImageData
 from backend.generators.pptx_builder import SlideContent, build_pptx
 from backend.versioning.version_manager import get_version_manager
 
@@ -209,6 +209,97 @@ def edit_docx(
     except Exception as e:
         logger.error(f"[Editor] DOCX edit error: {e}")
         return {"status": "error", "message": str(e)}
+
+
+def insert_image_to_docx(
+    file_path: str,
+    artifact_id: str,
+    image_path: str,
+    section_heading: Optional[str] = None,
+    caption: Optional[str] = None,
+    width_inches: float = 5.0,
+    align: str = "center",
+    output_dir: Optional[str] = None,
+) -> dict[str, Any]:
+    """
+    Insert an image into a DOCX document at a specified section (or target first section).
+    """
+    logger.info(f"[Editor] Inserting image '{image_path}' into DOCX '{file_path}'")
+    try:
+        doc = parse_docx(file_path)
+        style = extract_style_from_docx(doc)
+
+        sections: list[DocumentSection] = []
+        target_found = False
+
+        img_obj = ImageData(
+            image_path=image_path,
+            caption=caption,
+            width_inches=float(width_inches),
+            align=align.lower() if align in ("left", "center", "right") else "center",
+        )
+
+        for sec_dict in doc.sections:
+            heading = sec_dict["heading"]
+            content = sec_dict["content"]
+            img_list = []
+
+            # Check matching section
+            if (section_heading and section_heading.strip().lower() in heading.lower()) or (not section_heading and not target_found):
+                target_found = True
+                img_list.append(img_obj)
+
+            sections.append(DocumentSection(
+                heading=heading,
+                content=content,
+                level=1,
+                images=img_list,
+            ))
+
+        if not sections or not target_found:
+            # If no matching section found or empty doc, attach to first section or create new
+            if sections:
+                sections[0].images.append(img_obj)
+            else:
+                sections.append(DocumentSection(
+                    heading="Overview",
+                    content="",
+                    level=1,
+                    images=[img_obj],
+                ))
+
+        # Rebuild DOCX
+        new_file_path = build_docx(
+            sections=sections,
+            style=style,
+            title=Path(file_path).stem,
+            output_dir=output_dir,
+            version_id=artifact_id[:8],
+        )
+
+        # Version it
+        vm = get_version_manager()
+        version_record = vm.save_version(
+            artifact_id=artifact_id,
+            source_file_path=new_file_path,
+            title=Path(file_path).stem,
+            file_type="docx",
+            description=f"Inserted image: {Path(image_path).name}" + (f" ({caption})" if caption else ""),
+            metadata={"inserted_image": image_path, "caption": caption, "section": section_heading},
+        )
+
+        return {
+            "status": "success",
+            "file_path": new_file_path,
+            "artifact_id": artifact_id,
+            "version": version_record.version_number,
+            "filename": Path(new_file_path).name,
+            "changes_made": [f"Inserted image '{Path(image_path).name}' into document"],
+        }
+    except Exception as e:
+        logger.error(f"[Editor] Image insert error: {e}")
+        return {"status": "error", "message": str(e)}
+
 
 
 def edit_pptx(

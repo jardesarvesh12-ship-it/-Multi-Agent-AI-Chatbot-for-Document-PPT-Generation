@@ -165,6 +165,9 @@ export default function App() {
               generatedPpt={generatedPpt}
               docArtifactId={docArtifactId}
               pptArtifactId={pptArtifactId}
+              sessionId={SESSION_ID}
+              uploadedFiles={uploadedFiles}
+              onImageInserted={(newDoc) => setGeneratedDoc(newDoc)}
             />
           )}
           {rightTab === 'trace' && (

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
-import { Download, FileText, Presentation, ExternalLink } from 'lucide-react'
+import React, { useState } from 'react'
+import { Download, FileText, Image as ImageIcon } from 'lucide-react'
 import { getVersions, downloadFile } from '../api/client'
 import toast from 'react-hot-toast'
+import InsertImageModal from './InsertImageModal.jsx'
 
 function formatSize(bytes) {
   if (!bytes) return ''
@@ -10,9 +11,17 @@ function formatSize(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)}MB`
 }
 
-function ArtifactCard({ artifact, artifactId, type }) {
+function ArtifactCard({
+  artifact,
+  artifactId,
+  type,
+  sessionId,
+  uploadedFiles = [],
+  onImageInserted,
+}) {
   const [versions, setVersions] = useState([])
   const [showVersions, setShowVersions] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const isDoc = type === 'docx'
   const icon = isDoc ? '📄' : '📊'
@@ -54,6 +63,16 @@ function ArtifactCard({ artifact, artifactId, type }) {
         <Download size={12} /> Download {tag}
       </button>
 
+      {isDoc && artifactId && (
+        <button
+          className="btn btn-secondary"
+          onClick={() => setIsModalOpen(true)}
+          style={{ width: '100%', justifyContent: 'center', marginTop: 6, background: 'var(--accent-dim)', border: '1px solid var(--accent)' }}
+        >
+          <ImageIcon size={13} style={{ color: 'var(--accent-light)' }} /> 🖼️ Insert Image
+        </button>
+      )}
+
       {artifactId && (
         <button
           className="btn"
@@ -86,11 +105,30 @@ function ArtifactCard({ artifact, artifactId, type }) {
           </div>
         </div>
       )}
+
+      {isDoc && artifactId && (
+        <InsertImageModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          artifactId={artifactId}
+          sessionId={sessionId}
+          uploadedFiles={uploadedFiles}
+          onImageInserted={onImageInserted}
+        />
+      )}
     </div>
   )
 }
 
-export default function DocumentViewer({ generatedDoc, generatedPpt, docArtifactId, pptArtifactId }) {
+export default function DocumentViewer({
+  generatedDoc,
+  generatedPpt,
+  docArtifactId,
+  pptArtifactId,
+  sessionId,
+  uploadedFiles,
+  onImageInserted,
+}) {
   if (!generatedDoc && !generatedPpt) {
     return (
       <div className="empty-state">
@@ -108,6 +146,9 @@ export default function DocumentViewer({ generatedDoc, generatedPpt, docArtifact
           artifact={generatedDoc}
           artifactId={docArtifactId}
           type="docx"
+          sessionId={sessionId}
+          uploadedFiles={uploadedFiles}
+          onImageInserted={onImageInserted}
         />
       )}
       {generatedPpt && (
@@ -115,6 +156,9 @@ export default function DocumentViewer({ generatedDoc, generatedPpt, docArtifact
           artifact={generatedPpt}
           artifactId={pptArtifactId}
           type="pptx"
+          sessionId={sessionId}
+          uploadedFiles={uploadedFiles}
+          onImageInserted={onImageInserted}
         />
       )}
     </div>
