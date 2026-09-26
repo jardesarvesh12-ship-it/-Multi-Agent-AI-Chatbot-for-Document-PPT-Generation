@@ -1,7 +1,6 @@
 # Multi-Agent AI Chatbot for Document & PPT Generation
 
-An enterprise-grade multi-agent AI chatbot POC that understands user requests, analyzes uploaded documents and PPT templates, performs real-time web research, retrieves information from enterprise knowledge sources, and generates professional, editable documents and presentations.
-
+An enterprise-grade multi-agent AI chatbot Proof of Concept (POC) that understands user requests, analyzes uploaded documents and PPT templates, performs real-time web research, retrieves information from enterprise knowledge sources, and generates professional, editable documents and presentations.
 
 ---
 
@@ -10,7 +9,7 @@ An enterprise-grade multi-agent AI chatbot POC that understands user requests, a
 ```
 ┌─────────────────────────────────────────────────┐
 │              React Frontend (Vite)               │
-│   Chat · File Upload · Agent Trace · Versions    │
+│   Chat · File Upload · Quick Edit · Versions     │
 └─────────────────────┬───────────────────────────┘
                       │ REST API
 ┌─────────────────────▼───────────────────────────┐
@@ -45,48 +44,44 @@ An enterprise-grade multi-agent AI chatbot POC that understands user requests, a
 ### Multi-Agent System (9 Specialized Agents)
 | Agent | Role |
 |---|---|
-| **Supervisor/Orchestrator** | Plans workflow, routes to agents, aggregates results |
-| **Document Analyzer** | Parses DOCX, PDF, images; extracts structure/style |
-| **PPT Analyzer** | Parses PPTX; extracts layouts, themes, fonts |
-| **Web Researcher** | Real-time web search via Tavily API |
+| **Supervisor/Orchestrator** | Plans workflow, routes tasks to agents, aggregates results |
+| **Document Analyzer** | Parses DOCX, PDF, images; extracts structure, font, and style |
+| **PPT Analyzer** | Parses PPTX; extracts layouts, themes, slide masters, and fonts |
+| **Web Researcher** | Performs real-time web search via Tavily API |
 | **RAG Agent** | Retrieves enterprise knowledge from ChromaDB |
 | **Document Generator** | Creates editable DOCX with style transfer |
-| **PPT Generator** | Creates editable PPTX with theme transfer |
+| **PPT Generator** | Creates editable PPTX natively using imported templates |
 | **Validator** | Quality checks generated artifacts |
 | **Conversational Editor** | Modifies existing documents via natural language |
 
 ### Supported Capabilities
-- ✅ Upload & analyze DOCX, PDF, PPTX, and images (with OCR)
-- ✅ Extract tone, style, formatting, and structure from templates
-- ✅ Real-time web research with Tavily Search API
-- ✅ Enterprise RAG with ChromaDB vector database
-- ✅ Generate editable DOCX documents with style transfer
-- ✅ Generate editable PPTX presentations with comprehensive component generation:
-  - Template → Theme + Master Slides + Layouts + Fonts + Colors + Backgrounds + Text Styles + Shapes + Images + Tables + Charts + Element Positions + Spacing
-- ✅ Interactive UI Preview: View and directly edit generated DOCX and PPTX files through conversational queries
-- ✅ In-App Editing & Export: Conversational editing preserves formatting, with instant UI updates and seamless one-click file downloads
-- ✅ Full version history for all generated artifacts
-- ✅ Source citations and traceability
-- ✅ Agent execution trace for full transparency
-- ✅ Modular FastAPI backend with REST endpoints
+- ✅ **Upload & Analyze**: Supports DOCX, PDF, PPTX, and images (with built-in OCR).
+- ✅ **Style Extraction**: Extracts tone, formatting, and structure from templates.
+- ✅ **Web & RAG Integration**: Real-time web research and enterprise RAG with ChromaDB.
+- ✅ **Editable DOCX Generation**: Full style transfer preserving branding.
+- ✅ **Native PPTX Generation**: LLM-generated presentations natively adopt your uploaded Master Slides, Themes, Layouts, Fonts, Colors, Backgrounds, Text Styles, Shapes, Images, Tables, Charts, Element Positions, and Spacing.
+- ✅ **Interactive UI Preview**: View and directly edit generated files via an inline Quick Edit AI input without leaving the document card.
+- ✅ **In-App Editing & Export**: Conversational editing preserves formatting, triggering instant UI updates and seamless one-click downloads.
+- ✅ **Image Insertion**: Modal UI to insert logos and images at specific targets.
+- ✅ **Full Version History**: Navigate through past revisions of all generated artifacts.
+- ✅ **Source Citations**: Traceability for all LLM facts and web research.
+- ✅ **Agent Trace**: Full transparency into agent execution logs.
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology | Cost |
-|---|---|---|
-| LLM | Groq API (Llama 3.1 70B) | **Free** (14,400 tokens/min) |
-| Orchestration | LangGraph | Open-source |
-| Embeddings | sentence-transformers (all-MiniLM-L6-v2) | **Free** (local) |
-| Vector DB | ChromaDB | **Free** (local) |
-| Web Search | Tavily API | **Free** (1,000 searches/mo) |
-| OCR | Tesseract (pytesseract) | **Free** (local) |
-| DOCX | python-docx | Open-source |
-| PPTX | python-pptx | Open-source |
-| PDF | PyMuPDF (fitz) | Open-source |
-| Backend | FastAPI + Uvicorn | Open-source |
-| Frontend | React 18 + Vite | Open-source |
+| Layer | Technology |
+|---|---|
+| **LLM** | Groq API (Llama 3.1 70B) |
+| **Orchestration** | LangGraph |
+| **Embeddings** | sentence-transformers (all-MiniLM-L6-v2) |
+| **Vector DB** | ChromaDB (local) |
+| **Web Search** | Tavily API |
+| **OCR** | Tesseract (pytesseract) |
+| **File Builders** | python-docx, python-pptx, PyMuPDF (fitz) |
+| **Backend** | FastAPI + Uvicorn |
+| **Frontend** | React 18 + Vite |
 
 ---
 
@@ -98,118 +93,129 @@ An enterprise-grade multi-agent AI chatbot POC that understands user requests, a
 - **Tesseract OCR** (optional, for scanned documents)
   - Windows: [Download installer](https://github.com/UB-Mannheim/tesseract/wiki)
 
-
 ### Step 1: Clone & Setup Environment
 
 ```bash
 # Navigate to the project
-cd "d:\PROJECTS\End To End PROJECTS\6.-"
+cd "d:\PROJECTS\End To End PROJECTS\6.- Multi-Agent AI Chatbot for Document and PPT Generation"
 
-# Create Python virtual environment
+# Create and activate Python virtual environment
 python -m venv venv
 venv\Scripts\activate   # Windows
-
+# source venv/bin/activate  # macOS/Linux
 
 # Install Python dependencies
 pip install -r requirements.txt
-
-
-#  To run backend 
-.\start_backend.bat
-
-
-# Open a new terminal in the root of your project: 
-# 1. Navigate to the frontend folder
-cd frontend
-
-# 2. Install Node.js dependencies
-npm install
-
-# 3. Go back to the root and start the frontend
-cd ..
-
-.\start_frontend.bat
-
 ```
 
 ### Step 2: Get API Keys (Free)
-
-1. **Groq API Key** (free, instant):
-   - Go to [console.groq.com](https://console.groq.com)
-   - Sign up / log in → API Keys → Create new key
-
-2. **Tavily API Key** (free, 1000 searches/mo):
-   - Go to [app.tavily.com](https://app.tavily.com)
-   - Sign up → Dashboard → Copy API key
+1. **Groq API Key**: Go to [console.groq.com](https://console.groq.com) → API Keys → Create new key
+2. **Tavily API Key**: Go to [app.tavily.com](https://app.tavily.com) → Dashboard → Copy API key
 
 ### Step 3: Configure Environment
-
+Copy the example `.env` file:
 ```bash
-# Copy the example env file
 copy .env.example .env    # Windows
 # cp .env.example .env    # macOS/Linux
-
-# Edit .env and paste your API keys:
-# GROQ_API_KEY=gsk_xxxxxxxxxxxxx
-# TAVILY_API_KEY=tvly-xxxxxxxxxxxxx
+```
+Edit `.env` and paste your API keys:
+```env
+GROQ_API_KEY=gsk_xxxxxxxxxxxxx
+TAVILY_API_KEY=tvly-xxxxxxxxxxxxx
 ```
 
-### Step 4: Generate Sample Templates
-
+### Step 4: Generate Sample Templates (Optional)
+Run the script to generate local testing templates:
 ```bash
 python scripts/generate_samples.py
 ```
+This creates `sample_templates/Company_Proposal.docx` and `sample_templates/Company_Template.pptx`.
 
-This creates `sample_templates/Company_Proposal.docx` and `sample_templates/Company_Template.pptx` for testing.
-
-### Step 5: Start the Backend
-
+### Step 5: Start the Servers
+You can use the provided batch scripts for convenience:
 ```bash
-cd backend
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+# Open terminal 1
+.\start_backend.bat
+# API available at: http://localhost:8000
+# Swagger docs: http://localhost:8000/api/docs
+
+# Open terminal 2
+.\start_frontend.bat
+# UI available at: http://localhost:5173
 ```
 
-The API will be available at: `http://localhost:8000`
-- Swagger docs: `http://localhost:8000/api/docs`
 
-### Step 6: Start the Frontend
 
-```bash
+
+
+SET UP For python backend  
+# Navigate to the project folder
+cd "d:\PROJECTS\End To End PROJECTS\6.- Multi-Agent AI Chatbot for Document and PPT Generation"
+
+# Create a virtual environment (so your global Python stays clean)
+python -m venv venv
+
+# Activate the virtual environment
+.\venv\Scripts\activate
+
+# Install all the required Python libraries
+pip install -r requirements.txt
+
+# Generate Sample Templates
+python scripts/generate_samples.py
+
+#  Start the Backend Server
+.\start_backend.bat
+
+
+Set Up and Start the React Frontend
+
+# Navigate to the frontend folder
+cd "d:\PROJECTS\End To End PROJECTS\6.- Multi-Agent AI Chatbot for Document and PPT Generation\frontend"
+
+# Install Node.js dependencies and start the frontend UI
 cd frontend
+
 npm install
+
+cd ..
+
+# Start the frontend UI
 npm run dev
-```
 
-The UI will be available at: `http://localhost:5173`
 
+#  just run root folder if you have that script configured
+.\start_frontend.bat
 ---
+
+
+
+
 
 ## Usage Guidelines
 
 ### Basic Workflow
 
-1. **Upload Templates**: Drag & drop your DOCX/PPTX templates into the left panel
-2. **Give Instructions**: Type your request in the chat panel, e.g.:
-   - _"Research the latest Generative AI trends and create a proposal and 12-slide presentation using the same tone and style as the uploaded files."_
-3. **Wait for Agents**: Watch the Agent Trace panel on the right to see each agent executing
-4. **Download Files**: Generated DOCX/PPTX files appear in the right panel — click to download
-5. **Edit Conversationally**: Follow up with edits like:
-   - _"Add an executive summary"_
-   - _"Make the presentation more concise"_
-   - _"Add a competitive analysis section"_
-   - _"Update the report using the latest web information"_
+1. **Upload Templates**: Drag & drop your DOCX/PPTX templates into the left panel.
+2. **Give Instructions**: Type your request in the central chat panel.
+3. **Wait for Agents**: Watch the Agent Trace panel on the right to see each LangGraph agent executing in real time.
+4. **Download Files**: Generated files appear in the right panel under the "Files" tab — click to download.
+5. **Quick Edit AI**: Use the inline "Quick Edit via AI" text box directly on the file card to modify the document conversationally.
+6. **Insert Images**: Click "Insert Image" on a DOCX card to dynamically inject logos or graphics into specific sections.
 
 ### Example Prompts
 
-| Prompt | What Happens |
+| Prompt | Agent Action |
 |---|---|
-| "Research AI trends and write a professional proposal" | Web search → LLM generates styled DOCX |
-| "Create a 12-slide presentation on cloud computing" | LLM generates themed PPTX with speaker notes |
-| "Add an executive summary to the document" | Editor agent modifies existing DOCX |
-| "Make the presentation more concise" | Editor agent trims slide content |
-| "Research cybersecurity and update the proposal" | Fresh web search → edits existing DOCX |
+| *"Research AI trends and write a professional proposal"* | Web Researcher → Document Generator |
+| *"Create a 12-slide presentation on cloud computing"* | PPT Generator builds natively on uploaded template |
+| *"Make the presentation more concise"* | Editor Agent trims slide content directly |
+| *"Add an executive summary to the document"* | Editor Agent adds a styled section to the DOCX |
+| *"Insert the company logo at the top cover"* | Triggers specialized Image Insertion flow |
 
-### API Endpoints
+---
+
+## API Endpoints
 
 | Endpoint | Method | Description |
 |---|---|---|
@@ -217,7 +223,7 @@ The UI will be available at: `http://localhost:5173`
 | `/api/upload` | POST | Upload template files |
 | `/api/download/{filename}` | GET | Download generated file |
 | `/api/versions/{artifact_id}` | GET | Get version history |
-| `/api/artifacts` | GET | List all artifacts |
+| `/api/artifacts` | GET | List all generated artifacts |
 | `/api/knowledge` | GET | RAG knowledge base stats |
 | `/health` | GET | System health check |
 
@@ -261,7 +267,8 @@ The UI will be available at: `http://localhost:5173`
 │   │   │   ├── ChatPanel.jsx      # Chat interface
 │   │   │   ├── FileUploader.jsx   # Drag & drop upload
 │   │   │   ├── AgentTracePanel.jsx# Agent execution trace
-│   │   │   ├── DocumentViewer.jsx # Artifact downloads
+│   │   │   ├── DocumentViewer.jsx # Artifact downloads & Quick Edit
+│   │   │   ├── InsertImageModal.jsx # Image upload modal
 │   │   │   └── VersionHistory.jsx # Version browser
 │   │   └── api/
 │   │       └── client.js          # Axios API client
@@ -276,8 +283,7 @@ The UI will be available at: `http://localhost:5173`
 ├── requirements.txt               # Python dependencies
 ├── start_backend.bat              # Batch script to start the FastAPI backend
 ├── start_frontend.bat             # Batch script to start the React frontend
-├── .env                           # Environment variables (user created)
-├── .env.example                   # Example environment variables
+├── .env                           # Environment variables
 └── README.md
 ```
 
