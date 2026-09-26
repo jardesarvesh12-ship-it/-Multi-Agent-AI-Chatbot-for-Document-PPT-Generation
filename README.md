@@ -51,12 +51,6 @@ An enterprise-grade multi-agent AI chatbot Proof of Concept (POC) that understan
                        └────────┬────────┘
                                 │
                                 ▼
-                       ┌─────────────────┐
-                       │    ChromaDB     │
-                       │  Vector Store   │
-                       └────────┬────────┘
-                                │
-                                ▼
                   ┌─────────────────────────────┐
                   │     Content Generation      │
                   └──────────────┬──────────────┘
