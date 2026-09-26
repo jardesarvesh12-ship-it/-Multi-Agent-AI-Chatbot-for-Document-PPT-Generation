@@ -8,8 +8,8 @@ An enterprise-grade multi-agent AI chatbot Proof of Concept (POC) that understan
 
 ```
 ┌─────────────────────────────────────────────────┐
-│              React Frontend (Vite)               │
-│   Chat · File Upload · Quick Edit · Versions     │
+│              React Frontend (Vite)              │
+│   Chat · File Upload · Quick Edit · Versions    │
 └─────────────────────┬───────────────────────────┘
                       │ REST API
 ┌─────────────────────▼───────────────────────────┐
