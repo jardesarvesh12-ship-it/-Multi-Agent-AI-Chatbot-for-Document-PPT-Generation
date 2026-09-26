@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Download, FileText, Image as ImageIcon } from 'lucide-react'
-import { getVersions, downloadFile } from '../api/client'
+import { getVersions, downloadFile, sendMessage } from '../api/client'
 import toast from 'react-hot-toast'
 import InsertImageModal from './InsertImageModal.jsx'
 
@@ -18,10 +18,13 @@ function ArtifactCard({
   sessionId,
   uploadedFiles = [],
   onImageInserted,
+  onEditResponse,
 }) {
   const [versions, setVersions] = useState([])
   const [showVersions, setShowVersions] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editQuery, setEditQuery] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
 
   const isDoc = type === 'docx'
   const icon = isDoc ? '📄' : '📊'
@@ -44,6 +47,23 @@ function ArtifactCard({
     toast.success(`Downloading ${artifact.filename}`)
   }
 
+  const handleQuickEdit = async () => {
+    if (!editQuery.trim() || isEditing) return
+    setIsEditing(true)
+    const toastId = toast.loading(`Applying edit to ${tag}...`)
+    try {
+      const fileIds = uploadedFiles.map(f => f.file_id)
+      const result = await sendMessage(editQuery, sessionId, fileIds)
+      if (onEditResponse) onEditResponse(result)
+      toast.success(`Successfully updated ${tag}!`, { id: toastId })
+      setEditQuery('')
+    } catch (e) {
+      toast.error(`Edit failed: ${e.response?.data?.detail || e.message}`, { id: toastId })
+    } finally {
+      setIsEditing(false)
+    }
+  }
+
   return (
     <div className="artifact-card">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -62,6 +82,39 @@ function ArtifactCard({
       <button className="download-btn" onClick={handleDownload}>
         <Download size={12} /> Download {tag}
       </button>
+
+      {/* Quick Edit Section */}
+      {artifactId && (
+        <div style={{ marginTop: 12, padding: 8, background: 'var(--bg-deep)', borderRadius: 6, border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>✏️ Quick Edit via AI</div>
+          <input
+            type="text"
+            value={editQuery}
+            onChange={(e) => setEditQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleQuickEdit()}
+            placeholder={`e.g. "Add an executive summary to this ${tag}"`}
+            disabled={isEditing}
+            style={{
+              width: '100%',
+              padding: '6px 8px',
+              fontSize: 12,
+              borderRadius: 4,
+              border: '1px solid var(--border)',
+              background: 'var(--bg-surface)',
+              color: 'var(--text-primary)',
+              marginBottom: 4
+            }}
+          />
+          <button 
+            className="btn btn-secondary" 
+            onClick={handleQuickEdit}
+            disabled={isEditing || !editQuery.trim()}
+            style={{ width: '100%', justifyContent: 'center', padding: '4px', fontSize: 11 }}
+          >
+            {isEditing ? 'Applying...' : 'Apply Edit'}
+          </button>
+        </div>
+      )}
 
       {isDoc && artifactId && (
         <button

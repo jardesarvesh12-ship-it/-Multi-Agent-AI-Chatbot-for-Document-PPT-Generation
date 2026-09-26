@@ -168,6 +168,7 @@ export default function App() {
               sessionId={SESSION_ID}
               uploadedFiles={uploadedFiles}
               onImageInserted={(newDoc) => setGeneratedDoc(newDoc)}
+              onEditResponse={handleChatResponse}
             />
           )}
           {rightTab === 'trace' && (

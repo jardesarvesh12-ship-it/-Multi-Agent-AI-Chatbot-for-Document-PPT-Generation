@@ -33,6 +33,9 @@ class SlideContent:
     bullet_points: list[str] = field(default_factory=list)
     speaker_notes: str = ""
     layout_name: str = "Title and Content"
+    image_path: Optional[str] = None
+    table_data: Optional[list[list[str]]] = None
+    chart_data: Optional[dict] = None  # e.g., {"title": "Sales", "categories": [...], "series": [...]}
 
 
 def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
@@ -139,6 +142,55 @@ def _add_content_slide(
                     color_hex=style.body_color,
                 )
 
+    # Add image
+    if slide_content.image_path:
+        try:
+            left = Inches(5)
+            top = Inches(2)
+            height = Inches(4)
+            slide.shapes.add_picture(slide_content.image_path, left, top, height=height)
+        except Exception as e:
+            logger.error(f"Error adding image to slide: {e}")
+
+    # Add table
+    if slide_content.table_data and len(slide_content.table_data) > 0:
+        try:
+            rows = len(slide_content.table_data)
+            cols = len(slide_content.table_data[0])
+            left = Inches(1)
+            top = Inches(4)
+            width = Inches(8)
+            height = Inches(1.5)
+            table = slide.shapes.add_table(rows, cols, left, top, width, height).table
+            for r_idx, row_data in enumerate(slide_content.table_data):
+                for c_idx, val in enumerate(row_data):
+                    table.cell(r_idx, c_idx).text = str(val)
+                    if table.cell(r_idx, c_idx).text_frame.paragraphs and table.cell(r_idx, c_idx).text_frame.paragraphs[0].runs:
+                        _apply_text_style(table.cell(r_idx, c_idx).text_frame.paragraphs[0].runs[0], style.body_font, max(12, style.body_font_size - 4))
+        except Exception as e:
+            logger.error(f"Error adding table to slide: {e}")
+
+    # Add chart
+    if slide_content.chart_data:
+        try:
+            from pptx.chart.data import CategoryChartData
+            from pptx.enum.chart import XL_CHART_TYPE
+            
+            chart_data = CategoryChartData()
+            chart_data.categories = slide_content.chart_data.get("categories", [])
+            for series in slide_content.chart_data.get("series", []):
+                chart_data.add_series(series.get("name", "Series"), series.get("values", []))
+                
+            x, y, cx, cy = Inches(1), Inches(4), Inches(8), Inches(3)
+            chart = slide.shapes.add_chart(
+                XL_CHART_TYPE.COLUMN_CLUSTERED, x, y, cx, cy, chart_data
+            ).chart
+            chart.has_title = True
+            if chart.chart_title.text_frame:
+                chart.chart_title.text_frame.text = slide_content.chart_data.get("title", "Chart")
+        except Exception as e:
+            logger.error(f"Error adding chart to slide: {e}")
+
     # Add speaker notes
     if slide_content.speaker_notes:
         try:
@@ -195,7 +247,19 @@ def build_pptx(
     if not PPTX_AVAILABLE:
         raise ImportError("python-pptx required: pip install python-pptx")
 
-    prs = Presentation()
+    # Load template if available to preserve Theme, Master Slides, Layouts, Backgrounds
+    template_path = style.source_file if style.source_file and Path(style.source_file).exists() else None
+    
+    try:
+        prs = Presentation(template_path)
+        logger.info(f"Loaded PPTX template from: {template_path or 'default'}")
+        
+        # If the template has existing slides, we might want to clear them out, 
+        # but python-pptx doesn't support deleting slides easily. Usually templates 
+        # should be empty or just contain master layouts.
+    except Exception as e:
+        logger.warning(f"Failed to load template {template_path}: {e}. Falling back to default.")
+        prs = Presentation()
     prs.slide_width = Inches(style.slide_width)
     prs.slide_height = Inches(style.slide_height)
 

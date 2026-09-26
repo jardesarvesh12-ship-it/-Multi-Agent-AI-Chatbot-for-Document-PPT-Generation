@@ -63,7 +63,8 @@ An enterprise-grade multi-agent AI chatbot POC that understands user requests, a
 - ✅ Generate editable DOCX documents with style transfer
 - ✅ Generate editable PPTX presentations with comprehensive component generation:
   - Template → Theme + Master Slides + Layouts + Fonts + Colors + Backgrounds + Text Styles + Shapes + Images + Tables + Charts + Element Positions + Spacing
-- ✅ Conversational editing preserving formatting
+- ✅ Interactive UI Preview: View and directly edit generated DOCX and PPTX files through conversational queries
+- ✅ In-App Editing & Export: Conversational editing preserves formatting, with instant UI updates and seamless one-click file downloads
 - ✅ Full version history for all generated artifacts
 - ✅ Source citations and traceability
 - ✅ Agent execution trace for full transparency
