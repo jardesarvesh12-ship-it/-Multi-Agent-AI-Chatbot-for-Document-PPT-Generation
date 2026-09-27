@@ -48,8 +48,8 @@ def embed_texts(texts: list[str], model_name: str = "all-MiniLM-L6-v2") -> list[
         List of embedding vectors (each is a list of floats).
     """
     model = get_embedding_model(model_name)
-    embeddings = model.encode(texts, show_progress_bar=False, convert_to_list=True)
-    return embeddings
+    embeddings = model.encode(texts, show_progress_bar=False)
+    return embeddings.tolist()
 
 
 def embed_query(query: str, model_name: str = "all-MiniLM-L6-v2") -> list[float]:
@@ -64,4 +64,5 @@ def embed_query(query: str, model_name: str = "all-MiniLM-L6-v2") -> list[float]
         Embedding vector.
     """
     model = get_embedding_model(model_name)
-    return model.encode(query, convert_to_list=True)
+    embedding = model.encode(query)
+    return embedding.tolist()

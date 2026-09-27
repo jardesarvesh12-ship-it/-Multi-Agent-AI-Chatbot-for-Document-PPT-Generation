@@ -19,10 +19,9 @@ except ImportError:
 
 
 FALLBACK_MODELS = [
-    "openai/gpt-oss-20b",
-    "qwen/qwen3.8-27b",
-    "openai/gpt-oss-120b",
     "allam-2-7b",
+    "llama3-8b-8192",
+    "gemma2-9b-it"
 ]
 
 

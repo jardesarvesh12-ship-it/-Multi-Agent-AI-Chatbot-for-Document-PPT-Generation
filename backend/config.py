@@ -11,7 +11,7 @@ import os
 class Settings(BaseSettings):
     # ── LLM ──────────────────────────────────────────────────
     groq_api_key: str = Field(..., env="GROQ_API_KEY")
-    groq_model: str = Field("openai/gpt-oss-20b", env="GROQ_MODEL")
+    groq_model: str = Field("allam-2-7b", env="GROQ_MODEL")
 
     # ── Web Search ───────────────────────────────────────────
     tavily_api_key: str = Field(..., env="TAVILY_API_KEY")

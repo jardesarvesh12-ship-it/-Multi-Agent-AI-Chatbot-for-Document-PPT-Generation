@@ -229,7 +229,7 @@ cd "d:\PROJECTS\End To End PROJECTS\6.- Multi-Agent AI Chatbot for Document and 
 # Install Node.js dependencies and start the frontend UI
 cd frontend
 
-npm install
+npm install-scripts approve esbuild
 
 cd ..
 
